@@ -1,4 +1,4 @@
-MachoMenuNotification("S1Dev", "S1Dev Menu\n\nCapsLock=Menu | F3=Safe Noclip | F7=Crash")
+MachoMenuNotification("S1Dev", "S1Dev Menu\n\nCapsLock=Menu | F3=Noclip | F7=Crash")
 
 local function isResourceRunning(resourceName)
     return GetResourceState(resourceName) == "started"
@@ -12,99 +12,73 @@ local bp = setmetatable({}, {
 })
 
 -- ============================================================
---   SAFE NOCLIP (Anti-Ban - RECOMMENDED)
+--   NOCLIP (F3 key)
 -- ============================================================
-local safeNoclipActive = false
-local safeNoclipSpeed = 5.0
-local noclipSpeed = 5.0
+local noclipActive = false
+local noclipSpeed = 7.0
+local noclipThread = nil
 
--- Store original functions
-local originalGetEntityCoords = GetEntityCoords
-local originalSetEntityCoords = SetEntityCoords
-local originalGetEntityVelocity = GetEntityVelocity
-
-local function HookedGetEntityCoords(entity)
-    if safeNoclipActive and entity == PlayerPedId() then
-        return _G.fakeCoords or originalGetEntityCoords(entity)
-    end
-    return originalGetEntityCoords(entity)
-end
-
-local function HookedSetEntityCoords(entity, x, y, z, xAxis, yAxis, zAxis, clearArea)
-    if safeNoclipActive and entity == PlayerPedId() then
-        _G.fakeCoords = vector3(x, y, z)
-        return
-    end
-    return originalSetEntityCoords(entity, x, y, z, xAxis, yAxis, zAxis, clearArea)
-end
-
-local function HookedGetEntityVelocity(entity)
-    if safeNoclipActive and entity == PlayerPedId() then
-        return 0.0, 0.0, 0.0
-    end
-    return originalGetEntityVelocity(entity)
-end
-
-rawset(_G, 'GetEntityCoords', HookedGetEntityCoords)
-rawset(_G, 'SetEntityCoords', HookedSetEntityCoords)
-rawset(_G, 'GetEntityVelocity', HookedGetEntityVelocity)
-
-local safeNoclipThread = nil
-
-function ToggleSafeNoclip()
-    safeNoclipActive = not safeNoclipActive
-    
-    if safeNoclipActive then
-        local ped = PlayerPedId()
-        _G.fakeCoords = originalGetEntityCoords(ped)
-        MachoMenuNotification("S1Dev", "Safe Noclip ~g~ACTIVE~w~ (Use WASD + Space/Ctrl to fly)")
-        print("^2[S1Dev]^7 Safe Noclip ENABLED")
-        
-        if safeNoclipThread then return end
-        safeNoclipThread = Citizen.CreateThread(function()
-            while safeNoclipActive do
-                Citizen.Wait(0)
-                local ped = PlayerPedId()
-                local speed = safeNoclipSpeed
-                if IsControlPressed(0, 21) then speed = speed * 2.5 end -- Shift to go faster
-                
-                local camRot = GetGameplayCamRot(2)
-                local lastCoords = _G.fakeCoords or originalGetEntityCoords(ped)
-                
-                local forward = vector3(
-                    -math.sin(math.rad(camRot.z)) * math.cos(math.rad(camRot.x)),
-                    math.cos(math.rad(camRot.z)) * math.cos(math.rad(camRot.x)),
-                    math.sin(math.rad(camRot.x))
-                )
-                local right = vector3(
-                    math.cos(math.rad(camRot.z)),
-                    math.sin(math.rad(camRot.z)),
-                    0.0
-                )
-                
-                -- Movement controls
-                if IsControlPressed(0, 32) then lastCoords = lastCoords + forward * speed end  -- W
-                if IsControlPressed(0, 33) then lastCoords = lastCoords - forward * speed end  -- S
-                if IsControlPressed(0, 34) then lastCoords = lastCoords - right * speed end   -- A
-                if IsControlPressed(0, 35) then lastCoords = lastCoords + right * speed end   -- D
-                if IsControlPressed(0, 22) then lastCoords = lastCoords + vector3(0, 0, speed) end  -- Space (UP)
-                if IsControlPressed(0, 36) then lastCoords = lastCoords - vector3(0, 0, speed) end  -- Ctrl (DOWN)
-                
-                _G.fakeCoords = lastCoords
-                
-                if IsPedInAnyVehicle(ped, false) then
-                    local veh = GetVehiclePedIsIn(ped, false)
-                    originalSetEntityCoords(veh, lastCoords.x, lastCoords.y, lastCoords.z, true, true, true, false)
-                else
-                    originalSetEntityCoords(ped, lastCoords.x, lastCoords.y, lastCoords.z, true, true, true, false)
-                end
+local function StartNoclip()
+    if noclipThread then return end
+    noclipThread = Citizen.CreateThread(function()
+        while noclipActive do
+            Citizen.Wait(0)
+            local ped = PlayerPedId()
+            local inVeh = IsPedInAnyVehicle(ped, false)
+            local entity = inVeh and GetVehiclePedIsIn(ped, false) or ped
+            
+            local heading = GetGameplayCamRelativeHeading() + GetEntityHeading(ped)
+            local pitch = GetGameplayCamRelativePitch()
+            local rh = heading * 0.01745329
+            local rp = pitch * 0.01745329
+            local dx = -math.sin(rh) * math.cos(rp)
+            local dy = math.cos(rh) * math.cos(rp)
+            local dz = math.sin(rp)
+            
+            local spd = noclipSpeed * 0.05
+            if IsControlPressed(0, 21) then spd = spd * 3.0 end
+            
+            local c = GetEntityCoords(entity)
+            local nx, ny, nz = c.x, c.y, c.z
+            
+            if IsControlPressed(0, 32) then
+                nx = nx + dx * spd
+                ny = ny + dy * spd
+                nz = nz + dz * spd
             end
-            safeNoclipThread = nil
-        end)
+            if IsControlPressed(0, 33) then
+                nx = nx - dx * spd
+                ny = ny - dy * spd
+                nz = nz - dz * spd
+            end
+            if IsControlPressed(0, 22) then
+                nz = nz + spd
+            end
+            if IsControlPressed(0, 36) then
+                nz = nz - spd
+            end
+            
+            SetEntityCoordsNoOffset(entity, nx, ny, nz, true, true, true)
+            SetEntityVelocity(entity, 0.0, 0.0, 0.0)
+            SetEntityVisible(entity, false, false)
+            SetLocalPlayerVisibleLocally(false)
+        end
+        noclipThread = nil
+    end)
+end
+
+local function ToggleNoclip()
+    noclipActive = not noclipActive
+    
+    if noclipActive then
+        StartNoclip()
+        MachoMenuNotification("S1Dev", "Noclip ~g~ENABLED~w~ (WASD + Space/Ctrl)")
+        print("^2[S1Dev]^7 Noclip ENABLED")
     else
-        _G.fakeCoords = nil
-        MachoMenuNotification("S1Dev", "Safe Noclip ~r~OFF")
-        print("^2[S1Dev]^7 Safe Noclip DISABLED")
+        SetEntityVisible(PlayerPedId(), true, false)
+        SetLocalPlayerVisibleLocally(true)
+        MachoMenuNotification("S1Dev", "Noclip ~r~DISABLED")
+        print("^2[S1Dev]^7 Noclip DISABLED")
     end
 end
 
@@ -114,7 +88,6 @@ end
 local function CrashNearbyPlayers()
     print("^2[S1Dev]^7 Searching for nearby players...")
     
-    -- Find nearest player
     local target = nil
     local targetName = nil
     local nearestDist = 100.0
@@ -239,40 +212,26 @@ local function HealSelf()
 end
 
 -- ============================================================
---   KEYBIND CHECK - FIXED: Only triggers on button press, not release
+--   KEYBIND CHECK THREAD (F3 for Noclip, F7 for Crash)
 -- ============================================================
-local lastF3Press = 0
-local lastF7Press = 0
-local debounceDelay = 500 -- milliseconds
-
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(10)
+        Citizen.Wait(0)
         
-        -- F3 key (0x72) for Safe Noclip - only when JUST pressed
         if IsControlJustPressed(0, 0x72) then
-            local now = GetGameTimer()
-            if now - lastF3Press > debounceDelay then
-                lastF3Press = now
-                ToggleSafeNoclip()
-            end
+            ToggleNoclip()
         end
         
-        -- F7 key (0x76) for Crash - only when JUST pressed
         if IsControlJustPressed(0, 0x76) then
-            local now = GetGameTimer()
-            if now - lastF7Press > debounceDelay then
-                lastF7Press = now
-                CrashNearbyPlayers()
-            end
+            CrashNearbyPlayers()
         end
     end
 end)
 
 -- ============================================================
---   MENU SYSTEM (CapsLock to open)
+--   MENU SYSTEM (CapsLock to open) - USING WORKING FORMAT
 -- ============================================================
-local MenuSize = vec2(480, 420) 
+local MenuSize = vec2(480, 400) 
 local screenW, screenH = GetActiveScreenResolution()
 local MenuStartCoords = vec2(screenW / 2 - MenuSize.x / 2, screenH / 2 - MenuSize.y / 2)
 local TabsBarWidth = 120.0
@@ -284,12 +243,15 @@ local SectionRows = 2
 local TwoByTwoSectionWidth = (SectionChildWidth - (SectionsPadding * (SectionColumns + 1))) / SectionColumns
 local TwoByTwoSectionHeight = (MenuSize.y - (SectionsPadding * (SectionRows + 1))) / SectionRows
 
+-- THIS IS THE KEY FUNCTION - RETURNS endX and endY
 local function GetSectionCoords(col, row, colspan, rowspan)
     colspan = colspan or 1
     rowspan = rowspan or 1
     local startX = TabsBarWidth + (SectionsPadding * col) + (TwoByTwoSectionWidth * (col - 1))
     local startY = (SectionsPadding * row) + (TwoByTwoSectionHeight * (row - 1)) + MachoPaneGap
-    return startX, startY
+    local endX = startX + (TwoByTwoSectionWidth * colspan) + (SectionsPadding * (colspan - 1))
+    local endY = startY + (TwoByTwoSectionHeight * rowspan) + (SectionsPadding * (rowspan - 1))
+    return startX, startY, endX, endY
 end
 
 -- Create window
@@ -302,26 +264,22 @@ MachoMenuSetKeybind(MenuWindow, 0x14) -- CapsLock
 --   MAIN TAB
 -- ============================================================
 local MainTab = MachoMenuAddTab(MenuWindow, 'Main')
-local MainSection = MachoMenuGroup(MainTab, 'S1Dev Features', GetSectionCoords(1, 1))
+local startX, startY, endX, endY = GetSectionCoords(1, 1, 2, 2)
+local MainSection = MachoMenuGroup(MainTab, 'S1Dev Features', startX, startY, endX, endY)
 
--- Safe Noclip (Anti-Ban - RECOMMENDED)
-MachoMenuButton(MainSection, 'Safe Noclip [F3] (Anti-Ban)', function()
-    ToggleSafeNoclip()
+MachoMenuButton(MainSection, 'Noclip [F3]', function()
+    ToggleNoclip()
 end)
 
--- Noclip Speed Slider
-MachoMenuSlider(MainSection, "Noclip Speed", noclipSpeed, 1, 25, "", 0, function(Value)
+MachoMenuSlider(MainSection, "Noclip Speed", noclipSpeed, 1.0, 20.0, "", 1, function(Value)
     noclipSpeed = Value
-    safeNoclipSpeed = Value
     print("^2[S1Dev]^7 Noclip Speed: " .. Value)
 end)
 
--- Crash button
 MachoMenuButton(MainSection, 'Crash Nearby Player [F7]', function()
     CrashNearbyPlayers()
 end)
 
--- Revive & Heal
 MachoMenuButton(MainSection, 'Revive', function()
     ReviveSelf()
 end)
@@ -334,7 +292,8 @@ end)
 --   TELEPORT TAB
 -- ============================================================
 local TeleportTab = MachoMenuAddTab(MenuWindow, 'Teleport')
-local TeleportSection = MachoMenuGroup(TeleportTab, 'Teleport', GetSectionCoords(1, 1))
+local startX2, startY2, endX2, endY2 = GetSectionCoords(1, 1, 2, 2)
+local TeleportSection = MachoMenuGroup(TeleportTab, 'Teleport', startX2, startY2, endX2, endY2)
 
 MachoMenuButton(TeleportSection, 'TP to Waypoint', function()
     local blip = GetFirstBlipInfoId(8)
@@ -368,7 +327,8 @@ end)
 --   WEAPONS TAB
 -- ============================================================
 local WeaponsTab = MachoMenuAddTab(MenuWindow, 'Weapons')
-local WeaponsSection = MachoMenuGroup(WeaponsTab, 'Weapons', GetSectionCoords(1, 1))
+local startX3, startY3, endX3, endY3 = GetSectionCoords(1, 1, 2, 2)
+local WeaponsSection = MachoMenuGroup(WeaponsTab, 'Weapons', startX3, startY3, endX3, endY3)
 
 MachoMenuButton(WeaponsSection, 'Give All Weapons', function()
     local weapons = {
@@ -403,7 +363,8 @@ end)
 --   SETTINGS TAB
 -- ============================================================
 local SettingsTab = MachoMenuAddTab(MenuWindow, 'Settings')
-local SettingsSection = MachoMenuGroup(SettingsTab, 'Settings', GetSectionCoords(1, 1))
+local startX4, startY4, endX4, endY4 = GetSectionCoords(1, 1, 2, 2)
+local SettingsSection = MachoMenuGroup(SettingsTab, 'Settings', startX4, startY4, endX4, endY4)
 
 MachoMenuButton(SettingsSection, 'Check Anti-Cheat', function()
     local detected = false
@@ -446,6 +407,6 @@ end)
 print("^2[S1Dev]^7 ========================================")
 print("^2[S1Dev]^7 Menu Loaded Successfully!")
 print("^2[S1Dev]^7 CapsLock = Open Menu")
-print("^2[S1Dev]^7 F3 = Toggle Safe Noclip (Use WASD + Space/Ctrl to fly)")
+print("^2[S1Dev]^7 F3 = Toggle Noclip")
 print("^2[S1Dev]^7 F7 = Crash Nearby Player")
 print("^2[S1Dev]^7 ========================================")
