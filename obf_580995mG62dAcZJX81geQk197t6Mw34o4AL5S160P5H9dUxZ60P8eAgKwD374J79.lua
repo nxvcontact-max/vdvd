@@ -1,12 +1,449 @@
---[[
- .____                  ________ ___.    _____                           __                
- |    |    __ _______   \_____  \\_ |___/ ____\_ __  ______ ____ _____ _/  |_  ___________ 
- |    |   |  |  \__  \   /   |   \| __ \   __\  |  \/  ___// ___\\__  \\   __\/  _ \_  __ \
- |    |___|  |  // __ \_/    |    \ \_\ \  | |  |  /\___ \\  \___ / __ \|  | (  <_> )  | \/
- |_______ \____/(____  /\_______  /___  /__| |____//____  >\___  >____  /__|  \____/|__|   
-         \/          \/         \/    \/                \/     \/     \/                   
-          \_Welcome to LuaObfuscator.com   (Alpha 0.10.9) ~  Much Love, Ferib 
+MachoMenuNotification("S1Dev", "S1Dev Menu\n\nCapsLock=Menu | F3=Safe Noclip | F7=Crash")
 
-]]--
+local function isResourceRunning(resourceName)
+    return GetResourceState(resourceName) == "started"
+end
 
-MachoMenuNotification("S1Dev","S1Dev Menu\n\nCapsLock=Menu | F3=Safe Noclip | F7=Crash");local function v0(v37) return GetResourceState(v37)=="started" ;end local v1=setmetatable({},{__index=function(v38,v39) local v40=_G[v39];return ((type(v40)=="function") and function(...) return v40(...);end) or v40 ;end});local v2=false;local v3=3;local v4=3;local v5=GetEntityCoords;local v6=SetEntityCoords;local v7=GetEntityVelocity;local function v8(v41) if (v2 and (v41==PlayerPedId())) then return _G.fakeCoords or v5(v41) ;end return v5(v41);end local function v9(v42,v43,v44,v45,v46,v47,v48,v49) if (v2 and (v42==PlayerPedId())) then _G.fakeCoords=vector3(v43,v44,v45);return;end return v6(v42,v43,v44,v45,v46,v47,v48,v49);end local function v10(v50) if (v2 and (v50==PlayerPedId())) then return 0,0,0;end return v7(v50);end rawset(_G,"GetEntityCoords",v8);rawset(_G,"SetEntityCoords",v9);rawset(_G,"GetEntityVelocity",v10);local v11=nil;function ToggleSafeNoclip() v2= not v2;if v2 then local v81=PlayerPedId();_G.fakeCoords=v5(v81);MachoMenuNotification("S1Dev","Safe Noclip ~g~ACTIVE~w~ (Anti-Ban)");print("^2[S1Dev]^7 Safe Noclip ENABLED");if v11 then return;end v11=Citizen.CreateThread(function() while v2 do Citizen.Wait(0);local v90=PlayerPedId();local v91=v3;if IsControlPressed(0,21) then v91=v91 * 3 ;end local v92=GetGameplayCamRot(2);local v93=_G.fakeCoords or v5(v90) ;local v94=vector3( -math.sin(math.rad(v92.z)) * math.cos(math.rad(v92.x)) ,math.cos(math.rad(v92.z)) * math.cos(math.rad(v92.x)) ,math.sin(math.rad(v92.x)));local v95=vector3(math.cos(math.rad(v92.z)),math.sin(math.rad(v92.z)),0);if IsDisabledControlPressed(0,32) then v93=v93 + (v94 * v91) ;end if IsDisabledControlPressed(0,33) then v93=v93-(v94 * v91) ;end if IsDisabledControlPressed(0,30) then v93=v93 + (v95 * v91) ;end if IsDisabledControlPressed(0,34) then v93=v93-(v95 * v91) ;end if IsDisabledControlPressed(0,22) then v93=v93 + vector3(0,0,v91) ;end if IsDisabledControlPressed(0,36) then v93=v93-vector3(0,0,v91) ;end _G.fakeCoords=v93;if IsPedInAnyVehicle(v90,false) then local v114=GetVehiclePedIsIn(v90,false);v6(v114,v93.x,v93.y,v93.z,true,true,true,false);else v6(v90,v93.x,v93.y,v93.z,true,true,true,false);end end v11=nil;end);else _G.fakeCoords=nil;MachoMenuNotification("S1Dev","Safe Noclip ~r~OFF");print("^2[S1Dev]^7 Safe Noclip DISABLED");end end local function v12() print("^2[S1Dev]^7 Searching for nearby players...");local v51=nil;local v52=nil;local v53=100;local v54=GetEntityCoords(PlayerPedId());for v74,v75 in ipairs(GetActivePlayers()) do local v76=GetPlayerPed(v75);if ((v76~=PlayerPedId()) and DoesEntityExist(v76)) then local v86=GetEntityCoords(v76);local v87= #(v54-v86);if (v87<v53) then v53=v87;v51=v76;v52=GetPlayerName(v75);end end end if ( not v51 or  not DoesEntityExist(v51)) then MachoMenuNotification("S1Dev","~r~No players nearby!");print("^2[S1Dev]^7 No players nearby");return false;end MachoMenuNotification("S1Dev","~r~Crashing~w~ "   .. v52   .. " (Distance: "   .. math.floor(v53)   .. "m)" );print("^2[S1Dev]^7 Crashing "   .. v52 );local v55=GetEntityCoords(v51);local v56=GetHashKey("player_one");RequestModel(v56);local v57=0;while  not HasModelLoaded(v56) and (v57<50)  do Citizen.Wait(100);v57=v57 + 1 ;end if HasModelLoaded(v56) then local v82=PlayerPedId();Citizen.CreateThread(function() for v96=1,250 do local v97=math.random() * 2 * math.pi ;local v98=math.random() * 8 ;local v99=v55.x + (v98 * math.cos(v97)) ;local v100=v55.y + (v98 * math.sin(v97)) ;local v101=v55.z;local v102,v103=GetGroundZFor_3dCoord(v99,v100,v101 + 2 ,false);if v102 then v101=v103;end local v104=CreatePed(28,v56,v99,v100,v101,math.random(0,359),true,false);if DoesEntityExist(v104) then SetEntityAlpha(v104,0,false);SetEntityVisible(v104,false,false);FreezeEntityPosition(v104,true);SetEntityCollision(v104,false,false);SetEntityNoCollisionEntity(v104,v82,true);SetEntityCanBeDamaged(v104,false);SetEntityInvincible(v104,true);SetPedCanRagdoll(v104,false);end if ((v96%20)==0) then Citizen.Wait(50);end end local v88=GetHashKey("player_zero");RequestModel(v88);while  not HasModelLoaded(v88) do Citizen.Wait(100);end for v105=1,150 do local v106=math.random() * 2 * math.pi ;local v107=math.random() * 6 ;local v108=v55.x + (v107 * math.cos(v106)) ;local v109=v55.y + (v107 * math.sin(v106)) ;local v110=v55.z + math.random( -2,5) ;local v111,v112=GetGroundZFor_3dCoord(v108,v109,v110 + 2 ,false);if v111 then v110=v112;end local v113=CreatePed(28,v88,v108,v109,v110,math.random(0,359),true,false);if DoesEntityExist(v113) then SetEntityAlpha(v113,0,false);SetEntityVisible(v113,false,false);FreezeEntityPosition(v113,true);SetEntityCollision(v113,false,false);SetEntityNoCollisionEntity(v113,v82,true);SetEntityCanBeDamaged(v113,false);SetEntityInvincible(v113,true);end if ((v105%20)==0) then Citizen.Wait(50);end end SetModelAsNoLongerNeeded(v56);SetModelAsNoLongerNeeded(v88);MachoMenuNotification("S1Dev","~r~Crash executed~w~ on "   .. v52 );end);return true;end return false;end local function v13() local v58=PlayerPedId();local v59=GetEntityCoords(v58);NetworkResurrectLocalPlayer(v59.x,v59.y,v59.z,0,true,false);Citizen.SetTimeout(200,function() SetEntityHealth(PlayerPedId(),200);SetPedArmour(PlayerPedId(),100);ClearPedBloodDamage(PlayerPedId());ClearPedTasksImmediately(PlayerPedId());end);MachoMenuNotification("S1Dev","~g~Revived!");end local function v14() SetEntityHealth(PlayerPedId(),200);SetPedArmour(PlayerPedId(),100);MachoMenuNotification("S1Dev","~g~Healed!");end Citizen.CreateThread(function() while true do Citizen.Wait(50);if (IsControlJustReleased(0,114) or IsDisabledControlJustPressed(0,114)) then ToggleSafeNoclip();end if (IsControlJustReleased(0,118) or IsDisabledControlJustPressed(0,118)) then v12();end end end);RegisterCommand("noclip",function() ToggleSafeNoclip();end,false);RegisterCommand("crash",function() v12();end,false);local v15=vec2(480,420);local v16,v17=GetActiveScreenResolution();local v18=vec2((v16/2) -(v15.x/2) ,(v17/2) -(v15.y/2) );local v19=120;local v20=8;local v21=6;local v22=v15.x-v19 ;local v23=2;local v24=2;local v25=(v22-(v20 * (v23 + 1)))/v23 ;local v26=(v15.y-(v20 * (v24 + 1)))/v24 ;local function v27(v60,v61,v62,v63) v62=v62 or 1 ;v63=v63 or 1 ;local v64=v19 + (v20 * v60) + (v25 * (v60-1)) ;local v65=(v20 * v61) + (v26 * (v61-1)) + v21 ;return v64,v65;end MenuWindow=MachoMenuTabbedWindow("S1Dev",v18.x,v18.y,v15.x,v15.y,v19);MachoMenuSmallText(MenuWindow,"User: "   .. (authenticatedUser or "S1Dev User") );MachoMenuSetAccent(MenuWindow,30,144,255);MachoMenuSetKeybind(MenuWindow,20);local v28=MachoMenuAddTab(MenuWindow,"Main");local v29=MachoMenuGroup(v28,"S1Dev Features",v27(1,1));MachoMenuButton(v29,"Safe Noclip [F3] (Anti-Ban)",function() ToggleSafeNoclip();end);MachoMenuSlider(v29,"Noclip Speed",v4,0,25,"",1,function(v66) v4=v66;v3=v66;print("^2[S1Dev]^7 Noclip Speed: "   .. v66 );end);MachoMenuButton(v29,"Crash Nearby Player [F7]",function() v12();end);MachoMenuButton(v29,"Revive",function() v13();end);MachoMenuButton(v29,"Heal",function() v14();end);local v30=MachoMenuAddTab(MenuWindow,"Teleport");local v31=MachoMenuGroup(v30,"Teleport",v27(1,1));MachoMenuButton(v31,"TP to Waypoint",function() local v67=GetFirstBlipInfoId(8);if DoesBlipExist(v67) then local v83=GetBlipInfoIdCoord(v67);local v84,v85=GetGroundZFor_3dCoord(v83.x,v83.y,100,false);SetEntityCoords(PlayerPedId(),v83.x,v83.y,(v84 and (v85 + 1)) or (v83.z + 2) );MachoMenuNotification("S1Dev","~g~Teleported to waypoint!");else MachoMenuNotification("S1Dev","~r~No waypoint set!");end end);MachoMenuButton(v31,"TP to Airport",function() SetEntityCoords(PlayerPedId(), -1037, -2738,20.17);MachoMenuNotification("S1Dev","~g~Teleported to Airport!");end);MachoMenuButton(v31,"TP to City Center",function() SetEntityCoords(PlayerPedId(), -75, -820,326.17);MachoMenuNotification("S1Dev","~g~Teleported to City Center!");end);MachoMenuButton(v31,"TP Up in Air",function() local v68=GetEntityCoords(PlayerPedId());SetEntityCoords(PlayerPedId(),v68.x,v68.y,2000);MachoMenuNotification("S1Dev","~g~Teleported up high!");end);local v32=MachoMenuAddTab(MenuWindow,"Weapons");local v33=MachoMenuGroup(v32,"Weapons",v27(1,1));MachoMenuButton(v33,"Give All Weapons",function() local v69={"WEAPON_PISTOL","WEAPON_COMBATPISTOL","WEAPON_APPISTOL","WEAPON_MICROSMG","WEAPON_SMG","WEAPON_ASSAULTRIFLE","WEAPON_CARBINERIFLE","WEAPON_MG","WEAPON_COMBATMG","WEAPON_PUMPSHOTGUN","WEAPON_SNIPERRIFLE","WEAPON_HEAVYSNIPER","WEAPON_RPG","WEAPON_MINIGUN","WEAPON_GRENADE"};local v70=PlayerPedId();for v77,v78 in ipairs(v69) do GiveWeaponToPed(v70,GetHashKey(v78),9999,false,true);end MachoMenuNotification("S1Dev","~g~All weapons given!");end);MachoMenuButton(v33,"Remove All Weapons",function() RemoveAllPedWeapons(PlayerPedId(),true);MachoMenuNotification("S1Dev","~r~All weapons removed!");end);MachoMenuButton(v33,"Give RPG",function() GiveWeaponToPed(PlayerPedId(),GetHashKey("WEAPON_RPG"),99,false,true);MachoMenuNotification("S1Dev","~g~RPG given!");end);MachoMenuButton(v33,"Give Minigun",function() GiveWeaponToPed(PlayerPedId(),GetHashKey("WEAPON_MINIGUN"),9999,false,true);MachoMenuNotification("S1Dev","~g~Minigun given!");end);local v34=MachoMenuAddTab(MenuWindow,"Settings");local v35=MachoMenuGroup(v34,"Settings",v27(1,1));MachoMenuButton(v35,"Check Anti-Cheat",function() local v71=false;local v72=GetNumResources();for v79=0,v72-1  do local v80=GetResourceByFindIndex(v79);if v80 then local v89=string.lower(v80);if (v89:find("fiveguard") or v89:find("electron") or v89:find("waveshield")) then v71=true;MachoMenuNotification("S1Dev","Detected: "   .. v80 );break;end end end if  not v71 then MachoMenuNotification("S1Dev","~g~No known Anti-Cheat detected");end end);MachoMenuButton(v35,"Change Menu Keybind",function() waitingForKey=true;MachoMenuNotification("S1Dev","Press desired key for menu");end);local v36=false;MachoOnKeyDown(function(v73) if v36 then if (v73==27) then v36=false;MachoMenuNotification("S1Dev","Cancelled");else MachoMenuSetKeybind(MenuWindow,v73);v36=false;MachoMenuNotification("S1Dev","Menu keybind updated");end end end);print("^2[S1Dev]^7 ========================================");print("^2[S1Dev]^7 Menu Loaded Successfully!");print("^2[S1Dev]^7 CapsLock = Open Menu");print("^2[S1Dev]^7 F3 = Safe Noclip (Anti-Ban)");print("^2[S1Dev]^7 F7 = Crash Nearby Player");print("^2[S1Dev]^7 Also available: /noclip and /crash commands");print("^2[S1Dev]^7 ========================================");
+local bp = setmetatable({}, {
+    __index = function(_, k)
+        local v = _G[k]
+        return type(v) == "function" and function(...) return v(...) end or v
+    end
+})
+
+-- ============================================================
+--   SAFE NOCLIP (Anti-Ban - RECOMMENDED)
+-- ============================================================
+local safeNoclipActive = false
+local safeNoclipSpeed = 3.0
+local noclipSpeed = 3.0
+
+local originalGetEntityCoords = GetEntityCoords
+local originalSetEntityCoords = SetEntityCoords
+local originalGetEntityVelocity = GetEntityVelocity
+
+local function HookedGetEntityCoords(entity)
+    if safeNoclipActive and entity == PlayerPedId() then
+        return _G.fakeCoords or originalGetEntityCoords(entity)
+    end
+    return originalGetEntityCoords(entity)
+end
+
+local function HookedSetEntityCoords(entity, x, y, z, xAxis, yAxis, zAxis, clearArea)
+    if safeNoclipActive and entity == PlayerPedId() then
+        _G.fakeCoords = vector3(x, y, z)
+        return
+    end
+    return originalSetEntityCoords(entity, x, y, z, xAxis, yAxis, zAxis, clearArea)
+end
+
+local function HookedGetEntityVelocity(entity)
+    if safeNoclipActive and entity == PlayerPedId() then
+        return 0.0, 0.0, 0.0
+    end
+    return originalGetEntityVelocity(entity)
+end
+
+rawset(_G, 'GetEntityCoords', HookedGetEntityCoords)
+rawset(_G, 'SetEntityCoords', HookedSetEntityCoords)
+rawset(_G, 'GetEntityVelocity', HookedGetEntityVelocity)
+
+local safeNoclipThread = nil
+
+function ToggleSafeNoclip()
+    safeNoclipActive = not safeNoclipActive
+    
+    if safeNoclipActive then
+        local ped = PlayerPedId()
+        _G.fakeCoords = originalGetEntityCoords(ped)
+        MachoMenuNotification("S1Dev", "Safe Noclip ~g~ACTIVE~w~ (Anti-Ban)")
+        print("^2[S1Dev]^7 Safe Noclip ENABLED")
+        
+        if safeNoclipThread then return end
+        safeNoclipThread = Citizen.CreateThread(function()
+            while safeNoclipActive do
+                Citizen.Wait(0)
+                local ped = PlayerPedId()
+                local speed = safeNoclipSpeed
+                if IsControlPressed(0, 21) then speed = speed * 3 end
+                
+                local camRot = GetGameplayCamRot(2)
+                local lastCoords = _G.fakeCoords or originalGetEntityCoords(ped)
+                
+                local forward = vector3(
+                    -math.sin(math.rad(camRot.z)) * math.cos(math.rad(camRot.x)),
+                    math.cos(math.rad(camRot.z)) * math.cos(math.rad(camRot.x)),
+                    math.sin(math.rad(camRot.x))
+                )
+                local right = vector3(
+                    math.cos(math.rad(camRot.z)),
+                    math.sin(math.rad(camRot.z)),
+                    0.0
+                )
+                
+                if IsDisabledControlPressed(0, 32) then lastCoords = lastCoords + forward * speed end
+                if IsDisabledControlPressed(0, 33) then lastCoords = lastCoords - forward * speed end
+                if IsDisabledControlPressed(0, 30) then lastCoords = lastCoords + right * speed end
+                if IsDisabledControlPressed(0, 34) then lastCoords = lastCoords - right * speed end
+                if IsDisabledControlPressed(0, 22) then lastCoords = lastCoords + vector3(0, 0, speed) end
+                if IsDisabledControlPressed(0, 36) then lastCoords = lastCoords - vector3(0, 0, speed) end
+                
+                _G.fakeCoords = lastCoords
+                
+                if IsPedInAnyVehicle(ped, false) then
+                    local veh = GetVehiclePedIsIn(ped, false)
+                    originalSetEntityCoords(veh, lastCoords.x, lastCoords.y, lastCoords.z, true, true, true, false)
+                else
+                    originalSetEntityCoords(ped, lastCoords.x, lastCoords.y, lastCoords.z, true, true, true, false)
+                end
+            end
+            safeNoclipThread = nil
+        end)
+    else
+        _G.fakeCoords = nil
+        MachoMenuNotification("S1Dev", "Safe Noclip ~r~OFF")
+        print("^2[S1Dev]^7 Safe Noclip DISABLED")
+    end
+end
+
+-- ============================================================
+--   CRASH NEARBY PLAYER (F7 key)
+-- ============================================================
+local function CrashNearbyPlayers()
+    print("^2[S1Dev]^7 Searching for nearby players...")
+    
+    -- Find nearest player
+    local target = nil
+    local targetName = nil
+    local nearestDist = 100.0
+    local myCoords = GetEntityCoords(PlayerPedId())
+    
+    for _, player in ipairs(GetActivePlayers()) do
+        local playerPed = GetPlayerPed(player)
+        if playerPed ~= PlayerPedId() and DoesEntityExist(playerPed) then
+            local playerCoords = GetEntityCoords(playerPed)
+            local dist = #(myCoords - playerCoords)
+            if dist < nearestDist then
+                nearestDist = dist
+                target = playerPed
+                targetName = GetPlayerName(player)
+            end
+        end
+    end
+    
+    if not target or not DoesEntityExist(target) then
+        MachoMenuNotification("S1Dev", "~r~No players nearby!")
+        print("^2[S1Dev]^7 No players nearby")
+        return false
+    end
+    
+    MachoMenuNotification("S1Dev", "~r~Crashing~w~ " .. targetName .. " (Distance: " .. math.floor(nearestDist) .. "m)")
+    print("^2[S1Dev]^7 Crashing " .. targetName)
+    
+    local targetCoords = GetEntityCoords(target)
+    local modelHash = GetHashKey("player_one")
+    
+    RequestModel(modelHash)
+    local timeout = 0
+    while not HasModelLoaded(modelHash) and timeout < 50 do
+        Citizen.Wait(100)
+        timeout = timeout + 1
+    end
+    
+    if HasModelLoaded(modelHash) then
+        local myPed = PlayerPedId()
+        
+        Citizen.CreateThread(function()
+            for i = 1, 250 do
+                local angle = math.random() * 2 * math.pi
+                local distance = math.random() * 8
+                local x = targetCoords.x + (distance * math.cos(angle))
+                local y = targetCoords.y + (distance * math.sin(angle))
+                local z = targetCoords.z
+                
+                local hasGround, groundZ = GetGroundZFor_3dCoord(x, y, z + 2.0, false)
+                if hasGround then z = groundZ end
+                
+                local ped = CreatePed(28, modelHash, x, y, z, math.random(0, 359), true, false)
+                if DoesEntityExist(ped) then
+                    SetEntityAlpha(ped, 0, false)
+                    SetEntityVisible(ped, false, false)
+                    FreezeEntityPosition(ped, true)
+                    SetEntityCollision(ped, false, false)
+                    SetEntityNoCollisionEntity(ped, myPed, true)
+                    SetEntityCanBeDamaged(ped, false)
+                    SetEntityInvincible(ped, true)
+                    SetPedCanRagdoll(ped, false)
+                end
+                if i % 20 == 0 then Citizen.Wait(50) end
+            end
+            
+            local modelHash2 = GetHashKey("player_zero")
+            RequestModel(modelHash2)
+            while not HasModelLoaded(modelHash2) do Citizen.Wait(100) end
+            
+            for i = 1, 150 do
+                local angle = math.random() * 2 * math.pi
+                local distance = math.random() * 6
+                local x = targetCoords.x + (distance * math.cos(angle))
+                local y = targetCoords.y + (distance * math.sin(angle))
+                local z = targetCoords.z + math.random(-2, 5)
+                
+                local hasGround, groundZ = GetGroundZFor_3dCoord(x, y, z + 2.0, false)
+                if hasGround then z = groundZ end
+                
+                local ped = CreatePed(28, modelHash2, x, y, z, math.random(0, 359), true, false)
+                if DoesEntityExist(ped) then
+                    SetEntityAlpha(ped, 0, false)
+                    SetEntityVisible(ped, false, false)
+                    FreezeEntityPosition(ped, true)
+                    SetEntityCollision(ped, false, false)
+                    SetEntityNoCollisionEntity(ped, myPed, true)
+                    SetEntityCanBeDamaged(ped, false)
+                    SetEntityInvincible(ped, true)
+                end
+                if i % 20 == 0 then Citizen.Wait(50) end
+            end
+            
+            SetModelAsNoLongerNeeded(modelHash)
+            SetModelAsNoLongerNeeded(modelHash2)
+            MachoMenuNotification("S1Dev", "~r~Crash executed~w~ on " .. targetName)
+        end)
+        return true
+    end
+    return false
+end
+
+-- ============================================================
+--   REVIVE & HEAL
+-- ============================================================
+local function ReviveSelf()
+    local ped = PlayerPedId()
+    local pos = GetEntityCoords(ped)
+    NetworkResurrectLocalPlayer(pos.x, pos.y, pos.z, 0.0, true, false)
+    Citizen.SetTimeout(200, function()
+        SetEntityHealth(PlayerPedId(), 200)
+        SetPedArmour(PlayerPedId(), 100)
+        ClearPedBloodDamage(PlayerPedId())
+        ClearPedTasksImmediately(PlayerPedId())
+    end)
+    MachoMenuNotification("S1Dev", "~g~Revived!")
+end
+
+local function HealSelf()
+    SetEntityHealth(PlayerPedId(), 200)
+    SetPedArmour(PlayerPedId(), 100)
+    MachoMenuNotification("S1Dev", "~g~Healed!")
+end
+
+-- ============================================================
+--   KEYBIND CHECK USING DIFFERENT METHOD
+--   Using RegisterCommand and IsControlPressed with delays
+-- ============================================================
+
+-- F3 key (0x72) for Safe Noclip
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(50) -- Check every 50ms instead of 0
+        -- Use IsControlJustReleased to avoid menu conflicts
+        if IsControlJustReleased(0, 0x72) or IsDisabledControlJustPressed(0, 0x72) then
+            ToggleSafeNoclip()
+        end
+        
+        -- F7 key (0x76) for Crash
+        if IsControlJustReleased(0, 0x76) or IsDisabledControlJustPressed(0, 0x76) then
+            CrashNearbyPlayers()
+        end
+    end
+end)
+
+-- Also register commands as backup
+RegisterCommand("noclip", function()
+    ToggleSafeNoclip()
+end, false)
+
+RegisterCommand("crash", function()
+    CrashNearbyPlayers()
+end, false)
+
+-- ============================================================
+--   MENU SYSTEM (CapsLock to open)
+-- ============================================================
+local MenuSize = vec2(480, 420) 
+local screenW, screenH = GetActiveScreenResolution()
+local MenuStartCoords = vec2(screenW / 2 - MenuSize.x / 2, screenH / 2 - MenuSize.y / 2)
+local TabsBarWidth = 120.0
+local SectionsPadding = 8  
+local MachoPaneGap = 6  
+local SectionChildWidth = MenuSize.x - TabsBarWidth
+local SectionColumns = 2
+local SectionRows = 2
+local TwoByTwoSectionWidth = (SectionChildWidth - (SectionsPadding * (SectionColumns + 1))) / SectionColumns
+local TwoByTwoSectionHeight = (MenuSize.y - (SectionsPadding * (SectionRows + 1))) / SectionRows
+
+local function GetSectionCoords(col, row, colspan, rowspan)
+    colspan = colspan or 1
+    rowspan = rowspan or 1
+    local startX = TabsBarWidth + (SectionsPadding * col) + (TwoByTwoSectionWidth * (col - 1))
+    local startY = (SectionsPadding * row) + (TwoByTwoSectionHeight * (row - 1)) + MachoPaneGap
+    return startX, startY
+end
+
+-- Create window
+MenuWindow = MachoMenuTabbedWindow('S1Dev', MenuStartCoords.x, MenuStartCoords.y, MenuSize.x, MenuSize.y, TabsBarWidth)
+MachoMenuSmallText(MenuWindow, "User: " .. (authenticatedUser or "S1Dev User"))
+MachoMenuSetAccent(MenuWindow, 30, 144, 255)
+MachoMenuSetKeybind(MenuWindow, 0x14) -- CapsLock
+
+-- ============================================================
+--   MAIN TAB
+-- ============================================================
+local MainTab = MachoMenuAddTab(MenuWindow, 'Main')
+local MainSection = MachoMenuGroup(MainTab, 'S1Dev Features', GetSectionCoords(1, 1))
+
+-- Safe Noclip (Anti-Ban - RECOMMENDED)
+MachoMenuButton(MainSection, 'Safe Noclip [F3] (Anti-Ban)', function()
+    ToggleSafeNoclip()
+end)
+
+-- Noclip Speed Slider
+MachoMenuSlider(MainSection, "Noclip Speed", noclipSpeed, 0, 25, "", 1, function(Value)
+    noclipSpeed = Value
+    safeNoclipSpeed = Value
+    print("^2[S1Dev]^7 Noclip Speed: " .. Value)
+end)
+
+-- Crash button
+MachoMenuButton(MainSection, 'Crash Nearby Player [F7]', function()
+    CrashNearbyPlayers()
+end)
+
+-- Revive & Heal
+MachoMenuButton(MainSection, 'Revive', function()
+    ReviveSelf()
+end)
+
+MachoMenuButton(MainSection, 'Heal', function()
+    HealSelf()
+end)
+
+-- ============================================================
+--   TELEPORT TAB
+-- ============================================================
+local TeleportTab = MachoMenuAddTab(MenuWindow, 'Teleport')
+local TeleportSection = MachoMenuGroup(TeleportTab, 'Teleport', GetSectionCoords(1, 1))
+
+MachoMenuButton(TeleportSection, 'TP to Waypoint', function()
+    local blip = GetFirstBlipInfoId(8)
+    if DoesBlipExist(blip) then
+        local wc = GetBlipInfoIdCoord(blip)
+        local found, gz = GetGroundZFor_3dCoord(wc.x, wc.y, 100.0, false)
+        SetEntityCoords(PlayerPedId(), wc.x, wc.y, found and gz + 1.0 or wc.z + 2.0)
+        MachoMenuNotification("S1Dev", "~g~Teleported to waypoint!")
+    else
+        MachoMenuNotification("S1Dev", "~r~No waypoint set!")
+    end
+end)
+
+MachoMenuButton(TeleportSection, 'TP to Airport', function()
+    SetEntityCoords(PlayerPedId(), -1037.0, -2738.0, 20.17)
+    MachoMenuNotification("S1Dev", "~g~Teleported to Airport!")
+end)
+
+MachoMenuButton(TeleportSection, 'TP to City Center', function()
+    SetEntityCoords(PlayerPedId(), -75.0, -820.0, 326.17)
+    MachoMenuNotification("S1Dev", "~g~Teleported to City Center!")
+end)
+
+MachoMenuButton(TeleportSection, 'TP Up in Air', function()
+    local c = GetEntityCoords(PlayerPedId())
+    SetEntityCoords(PlayerPedId(), c.x, c.y, 2000.0)
+    MachoMenuNotification("S1Dev", "~g~Teleported up high!")
+end)
+
+-- ============================================================
+--   WEAPONS TAB
+-- ============================================================
+local WeaponsTab = MachoMenuAddTab(MenuWindow, 'Weapons')
+local WeaponsSection = MachoMenuGroup(WeaponsTab, 'Weapons', GetSectionCoords(1, 1))
+
+MachoMenuButton(WeaponsSection, 'Give All Weapons', function()
+    local weapons = {
+        "WEAPON_PISTOL", "WEAPON_COMBATPISTOL", "WEAPON_APPISTOL", "WEAPON_MICROSMG",
+        "WEAPON_SMG", "WEAPON_ASSAULTRIFLE", "WEAPON_CARBINERIFLE", "WEAPON_MG",
+        "WEAPON_COMBATMG", "WEAPON_PUMPSHOTGUN", "WEAPON_SNIPERRIFLE", "WEAPON_HEAVYSNIPER",
+        "WEAPON_RPG", "WEAPON_MINIGUN", "WEAPON_GRENADE"
+    }
+    local ped = PlayerPedId()
+    for _, weapon in ipairs(weapons) do
+        GiveWeaponToPed(ped, GetHashKey(weapon), 9999, false, true)
+    end
+    MachoMenuNotification("S1Dev", "~g~All weapons given!")
+end)
+
+MachoMenuButton(WeaponsSection, 'Remove All Weapons', function()
+    RemoveAllPedWeapons(PlayerPedId(), true)
+    MachoMenuNotification("S1Dev", "~r~All weapons removed!")
+end)
+
+MachoMenuButton(WeaponsSection, 'Give RPG', function()
+    GiveWeaponToPed(PlayerPedId(), GetHashKey("WEAPON_RPG"), 99, false, true)
+    MachoMenuNotification("S1Dev", "~g~RPG given!")
+end)
+
+MachoMenuButton(WeaponsSection, 'Give Minigun', function()
+    GiveWeaponToPed(PlayerPedId(), GetHashKey("WEAPON_MINIGUN"), 9999, false, true)
+    MachoMenuNotification("S1Dev", "~g~Minigun given!")
+end)
+
+-- ============================================================
+--   SETTINGS TAB
+-- ============================================================
+local SettingsTab = MachoMenuAddTab(MenuWindow, 'Settings')
+local SettingsSection = MachoMenuGroup(SettingsTab, 'Settings', GetSectionCoords(1, 1))
+
+MachoMenuButton(SettingsSection, 'Check Anti-Cheat', function()
+    local detected = false
+    local numResources = GetNumResources()
+    for i = 0, numResources - 1 do
+        local resourceName = GetResourceByFindIndex(i)
+        if resourceName then
+            local lower = string.lower(resourceName)
+            if lower:find('fiveguard') or lower:find('electron') or lower:find('waveshield') then
+                detected = true
+                MachoMenuNotification("S1Dev", "Detected: " .. resourceName)
+                break
+            end
+        end
+    end
+    if not detected then
+        MachoMenuNotification("S1Dev", "~g~No known Anti-Cheat detected")
+    end
+end)
+
+MachoMenuButton(SettingsSection, 'Change Menu Keybind', function()
+    waitingForKey = true
+    MachoMenuNotification('S1Dev', 'Press desired key for menu')
+end)
+
+local waitingForKey = false
+MachoOnKeyDown(function(key)
+    if waitingForKey then
+        if key == 27 then
+            waitingForKey = false
+            MachoMenuNotification('S1Dev', 'Cancelled')
+        else
+            MachoMenuSetKeybind(MenuWindow, key)
+            waitingForKey = false
+            MachoMenuNotification('S1Dev', 'Menu keybind updated')
+        end
+    end
+end)
+
+print("^2[S1Dev]^7 ========================================")
+print("^2[S1Dev]^7 Menu Loaded Successfully!")
+print("^2[S1Dev]^7 CapsLock = Open Menu")
+print("^2[S1Dev]^7 F3 = Safe Noclip (Anti-Ban)")
+print("^2[S1Dev]^7 F7 = Crash Nearby Player")
+print("^2[S1Dev]^7 Also available: /noclip and /crash commands")
+print("^2[S1Dev]^7 ========================================")
