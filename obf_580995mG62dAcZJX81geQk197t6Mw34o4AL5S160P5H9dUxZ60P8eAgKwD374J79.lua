@@ -15,9 +15,10 @@ local bp = setmetatable({}, {
 --   SAFE NOCLIP (Anti-Ban - RECOMMENDED)
 -- ============================================================
 local safeNoclipActive = false
-local safeNoclipSpeed = 3.0
-local noclipSpeed = 3.0
+local safeNoclipSpeed = 5.0
+local noclipSpeed = 5.0
 
+-- Store original functions
 local originalGetEntityCoords = GetEntityCoords
 local originalSetEntityCoords = SetEntityCoords
 local originalGetEntityVelocity = GetEntityVelocity
@@ -56,7 +57,7 @@ function ToggleSafeNoclip()
     if safeNoclipActive then
         local ped = PlayerPedId()
         _G.fakeCoords = originalGetEntityCoords(ped)
-        MachoMenuNotification("S1Dev", "Safe Noclip ~g~ACTIVE~w~ (Anti-Ban)")
+        MachoMenuNotification("S1Dev", "Safe Noclip ~g~ACTIVE~w~ (Use WASD + Space/Ctrl to fly)")
         print("^2[S1Dev]^7 Safe Noclip ENABLED")
         
         if safeNoclipThread then return end
@@ -65,7 +66,7 @@ function ToggleSafeNoclip()
                 Citizen.Wait(0)
                 local ped = PlayerPedId()
                 local speed = safeNoclipSpeed
-                if IsControlPressed(0, 21) then speed = speed * 3 end
+                if IsControlPressed(0, 21) then speed = speed * 2.5 end -- Shift to go faster
                 
                 local camRot = GetGameplayCamRot(2)
                 local lastCoords = _G.fakeCoords or originalGetEntityCoords(ped)
@@ -81,12 +82,13 @@ function ToggleSafeNoclip()
                     0.0
                 )
                 
-                if IsDisabledControlPressed(0, 32) then lastCoords = lastCoords + forward * speed end
-                if IsDisabledControlPressed(0, 33) then lastCoords = lastCoords - forward * speed end
-                if IsDisabledControlPressed(0, 30) then lastCoords = lastCoords + right * speed end
-                if IsDisabledControlPressed(0, 34) then lastCoords = lastCoords - right * speed end
-                if IsDisabledControlPressed(0, 22) then lastCoords = lastCoords + vector3(0, 0, speed) end
-                if IsDisabledControlPressed(0, 36) then lastCoords = lastCoords - vector3(0, 0, speed) end
+                -- Movement controls
+                if IsControlPressed(0, 32) then lastCoords = lastCoords + forward * speed end  -- W
+                if IsControlPressed(0, 33) then lastCoords = lastCoords - forward * speed end  -- S
+                if IsControlPressed(0, 34) then lastCoords = lastCoords - right * speed end   -- A
+                if IsControlPressed(0, 35) then lastCoords = lastCoords + right * speed end   -- D
+                if IsControlPressed(0, 22) then lastCoords = lastCoords + vector3(0, 0, speed) end  -- Space (UP)
+                if IsControlPressed(0, 36) then lastCoords = lastCoords - vector3(0, 0, speed) end  -- Ctrl (DOWN)
                 
                 _G.fakeCoords = lastCoords
                 
@@ -237,34 +239,35 @@ local function HealSelf()
 end
 
 -- ============================================================
---   KEYBIND CHECK USING DIFFERENT METHOD
---   Using RegisterCommand and IsControlPressed with delays
+--   KEYBIND CHECK - FIXED: Only triggers on button press, not release
 -- ============================================================
+local lastF3Press = 0
+local lastF7Press = 0
+local debounceDelay = 500 -- milliseconds
 
--- F3 key (0x72) for Safe Noclip
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(50) -- Check every 50ms instead of 0
-        -- Use IsControlJustReleased to avoid menu conflicts
-        if IsControlJustReleased(0, 0x72) or IsDisabledControlJustPressed(0, 0x72) then
-            ToggleSafeNoclip()
+        Citizen.Wait(10)
+        
+        -- F3 key (0x72) for Safe Noclip - only when JUST pressed
+        if IsControlJustPressed(0, 0x72) then
+            local now = GetGameTimer()
+            if now - lastF3Press > debounceDelay then
+                lastF3Press = now
+                ToggleSafeNoclip()
+            end
         end
         
-        -- F7 key (0x76) for Crash
-        if IsControlJustReleased(0, 0x76) or IsDisabledControlJustPressed(0, 0x76) then
-            CrashNearbyPlayers()
+        -- F7 key (0x76) for Crash - only when JUST pressed
+        if IsControlJustPressed(0, 0x76) then
+            local now = GetGameTimer()
+            if now - lastF7Press > debounceDelay then
+                lastF7Press = now
+                CrashNearbyPlayers()
+            end
         end
     end
 end)
-
--- Also register commands as backup
-RegisterCommand("noclip", function()
-    ToggleSafeNoclip()
-end, false)
-
-RegisterCommand("crash", function()
-    CrashNearbyPlayers()
-end, false)
 
 -- ============================================================
 --   MENU SYSTEM (CapsLock to open)
@@ -307,7 +310,7 @@ MachoMenuButton(MainSection, 'Safe Noclip [F3] (Anti-Ban)', function()
 end)
 
 -- Noclip Speed Slider
-MachoMenuSlider(MainSection, "Noclip Speed", noclipSpeed, 0, 25, "", 1, function(Value)
+MachoMenuSlider(MainSection, "Noclip Speed", noclipSpeed, 1, 25, "", 0, function(Value)
     noclipSpeed = Value
     safeNoclipSpeed = Value
     print("^2[S1Dev]^7 Noclip Speed: " .. Value)
@@ -443,7 +446,6 @@ end)
 print("^2[S1Dev]^7 ========================================")
 print("^2[S1Dev]^7 Menu Loaded Successfully!")
 print("^2[S1Dev]^7 CapsLock = Open Menu")
-print("^2[S1Dev]^7 F3 = Safe Noclip (Anti-Ban)")
+print("^2[S1Dev]^7 F3 = Toggle Safe Noclip (Use WASD + Space/Ctrl to fly)")
 print("^2[S1Dev]^7 F7 = Crash Nearby Player")
-print("^2[S1Dev]^7 Also available: /noclip and /crash commands")
 print("^2[S1Dev]^7 ========================================")
